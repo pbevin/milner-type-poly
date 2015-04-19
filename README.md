@@ -1,4 +1,4 @@
-# Types and Polymorphism chapter 3
+# A Theory of Type Polymorphism in Programming
 
 ## Recap
 
@@ -95,7 +95,7 @@ Semantics of polytypes
 Notes on "downward closed" and "directed complete":
 * These mostly come from Dana Scott's domain theory
 * Directed Complete (aka "up complete" aka "DCPO") means that every directed subset has a supremum
-  * and in this case, it means that 
+  * and in this case, it means that
 
 ## 3.5 Type Assignments (p.361)
 

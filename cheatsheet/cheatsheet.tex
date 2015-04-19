@@ -1,6 +1,8 @@
 \documentclass[12pt]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amsthm,amssymb,amsfonts,mathrsfs,txfonts,booktabs}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,mathrsfs,txfonts,booktabs,enumitem,lmodern}
+
+\setlist{nosep}
 
 \newcommand{\B}{\mathbb{B}}
 \newcommand{\N}{\mathbb{N}}
@@ -9,6 +11,8 @@
 \newcommand{\cast}[2]{#1\mid#2}
 \newcommand{\pe}[2]{#1\mid#2}
 \newcommand{\tpe}[2]{\overline{#1}\mid\overline{#2}}
+\newcommand{\eval}[1]{\mathscr{E}[\![#1]\!]\eta}
+\newcommand{\env}[1]{\eta[\![#1]\!]}
 
 \begin{document}
 
@@ -61,8 +65,8 @@ $V$ &  & \\
 $W$ & Wrong & The error type \\
 $\eta$ & Environment & In the paper, this is a function from \texttt{id} to \texttt{V}, but we would be more likely to model it as a \texttt{map}.\\
 $\mathscr{E}$   & Semantic Function & \texttt{eval} \\
-$\mathscr{E}[\![T]\!]\eta$ & Semantic evaluation & \texttt{(eval exp env)} where \texttt{eval} is $\mathscr{E}$, \texttt{exp} is $T$, and \texttt{env} is $\eta$ \\
-$\mathscr{\eta}[\![x]\!]$ & Type lookup & The type of the Exp variable $x$. \\
+$\eval{T}$ & Semantic evaluation & \texttt{(eval exp env)} where \texttt{eval} is $\mathscr{E}$, \texttt{exp} is $T$, and \texttt{env} is $\eta$ \\
+$\env{x}$ & Type lookup & The type of the Exp variable $x$. \\
 $\iota_n$ & Type of $B_n$ & For example, $B_0$ is $\B$, $B_1$ might be $\N$, $B_2$ might be $\R$, etc. \\
 $\instanceof{v}{D}$ & [16] page~34 & Value $v$ has type $D$ - like \texttt{instanceof} in Java. \\
 $\cast{v}{D}$ & & Type cast (error value if not possible, but we always check first with $\instanceof{v}{D}$) \\
@@ -93,5 +97,6 @@ Page & Concept & Meaning \\
 
 \bottomrule
 \end{tabular}
+
 
 \end{document}
