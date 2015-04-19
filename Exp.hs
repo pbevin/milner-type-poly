@@ -46,6 +46,25 @@ eval (Let x e1 e2) env =
     _   -> eval e2 (Map.insert x v1 env)
 
 
+type Prefix = String
+type PE = (Prefix, Expr)
+
+pes :: [Prefix] -> Exp -> [PE]
+pes p (Id x) = []
+pes p (Apply e e') = [(p,e), (p,e')]
+pes p (Cond e e' e'') = [(p,e), (p,e'), (p,e'')]
+pes p (Lambda x e) = [(p ++ [("λ" ++ x)]), e)]
+pes p (Fix x e) = [(p ++ [("fun " ++ x)]), e)]
+pes p (Let x e e') = [(p, e), (p ++ [("let " ++ x)]), e')]
+
+e1 :: Exp
+e1 = Lamxbda "y" $ Let "f" (Lambda "x" (Apply (Id x) (Id y))
+                                      (Apply (Id f) (Id y)))
+
+
+
+
+
 
 
 type Id = String
