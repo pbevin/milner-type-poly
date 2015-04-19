@@ -1,7 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amsthm,amssymb,amsfonts,mathrsfs}
-\usepackage{booktabs}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,mathrsfs,txfonts,booktabs}
 
 \newcommand{\B}{\mathbb{B}}
 \newcommand{\N}{\mathbb{N}}
@@ -62,13 +61,16 @@ $V$ &  & \\
 $W$ & Wrong & The error type \\
 $\eta$ & Environment & In the paper, this is a function from \texttt{id} to \texttt{V}, but we would be more likely to model it as a \texttt{map}.\\
 $\mathscr{E}$   & Semantic Function & \texttt{eval} \\
-$\mathscr{E}[\![T]\!]\eta$ & Semantic evaluation of $T$ in environment $\eta$ & \texttt{eval exp env} \\
+$\mathscr{E}[\![T]\!]\eta$ & Semantic evaluation & \texttt{(eval exp env)} where \texttt{eval} is $\mathscr{E}$, \texttt{exp} is $T$, and \texttt{env} is $\eta$ \\
+$\mathscr{\eta}[\![x]\!]$ & Type lookup & The type of the Exp variable $x$. \\
 $\iota_n$ & Type of $B_n$ & For example, $B_0$ is $\B$, $B_1$ might be $\N$, $B_2$ might be $\R$, etc. \\
-$\instanceof{v}{D}$ & & \texttt{instanceof} \\
+$\instanceof{v}{D}$ & [16] page~34 & Value $v$ has type $D$ - like \texttt{instanceof} in Java. \\
 $\cast{v}{D}$ & & Type cast (error value if not possible, but we always check first with $\instanceof{v}{D}$) \\
 
 $\pe{p}{e}$ & Prefixed expression & An expression showing what $\lambda$, \texttt{fix}, and \texttt{let} bindings are in effect \\
 $\tpe{p}{e}$ & Typed expression &  A prefixed expression augmented with type information at each level \\
+$\sqsubseteq$ & No definition given & Measure of ``defined''ness -- e.g., in $B_0$, $\bot_T \sqsubseteq \text{true}$ and $\bot_T \sqsubseteq \text{false}$, but $\text{false} \nsqsubseteq \text{true}$. \\
+$\sqcup$ & No definition given & \\
 
 \bottomrule
 \end{tabular}
@@ -84,7 +86,7 @@ Page & Concept & Meaning \\
 361 & Prefix & A list of the variable bindings in effect for an expression \\
 361 & Active & A member of the prefix that is not shadowed by a later member with the same name \\
 362 & Generic type variable & One that does not occur in the type of any $\lambda$ or \texttt{fix} binding above it \\
-362 & Standard typing & In any \texttt{let} expression, none of the type variables in \texttt{x=e} occur in the \texttt{let} body. \\
+362 & Standard typing & You can safely ignore this: it's a purely technical constraint. \\
 362 & Well-typed & An expression is well-typed if it can be assigned a type and the resulting type obeys certain laws. See Proposition~3 on page~362.\\
 364 & Semantic Soundness Theorem & A well-typed program cannot ``go wrong'' \\
 367 & Syntactic Soundness Theorem & If algorithm $\mathscr{W}$ accepts a program, then it is well-typed. \\

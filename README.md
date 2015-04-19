@@ -64,31 +64,45 @@ So we will have to firm up the statement of the theorem by
 
 ## 3.3 Discussion of Types (p.359)
 
-* Values usually have types.
-  * Some values have one type, e.g., `1` has type `Int`.
-  * Some values have many types, e.g., `length` has types `[Int]->Int` and `[String]->Int`
-  * Some values have no type, e.g., `if 3 then 4 else 5`
-  * If a function has type `a -> b`, and we give it value of type `a`, then we will get out
-    a value of type `b`, not an error.
-* We are going to define the concept "Well-typed"
-* We now have 2 goals:
-  * Prove that if we can assign a type to an expression, it won't throw a type error at runtime.
-    This is the remainder of section 3,
-  * Find a way to assign a type to an expression - this is section 4.
+Values usually have types.
+* Some values have one type, e.g., `1` has type `Int`.
+* Some values have many types, e.g., `length` has types `[Int]->Int` and `[String]->Int`
+* Some values have no type, e.g., `if 3 then 4 else 5`
+* If a function has type `a -> b`, and we give it value of type `a`, then we will get out
+  a value of type `b`, not an error.
+
+We now have 2 goals:
+* Prove that if we can assign a type to an expression and it is "well-typed"
+  (which we will define in 3.5), the evaluator won't throw a type error at
+  runtime.  This is the remainder of section 3,
+* Find a way to assign a type to an expression - this is section 4.
 
 ## 3.4 Types and their Semantics (p.359)
 
-* Syntax of types
-  * Basic types
-  * Type variables
-  * Construction of function types from basic types and type variables
-* Semantics of monotypes: a value has a monotype if:
-  * It's a basic type, then the type of the value is the type of the object
-  * It's a function that always returns a type `b` when given a type `a`, then it has type `a->b`
-    * Another example of a function with no type: f(1) = "one", f(2) = 2, f undefined elsewhere
-* Semantics of polytypes
+Syntax of types:
+* Basic types
+* Type variables
+* Construction of function types from basic types and type variables
+
+Semantics of monotypes: a value has a monotype if:
+* It's a basic type, then the type of the value is the type of the object
+* It's a function that always returns a type `b` when given a type `a`, then it has type `a->b`
+  * Another example of a function with no type: f(1) = "one", f(2) = 2, f undefined elsewhere
+
+Semantics of polytypes
+* <=
+
+Notes on "downward closed" and "directed complete":
+* These mostly come from Dana Scott's domain theory
+* Directed Complete (aka "up complete" aka "DCPO") means that every directed subset has a supremum
+  * and in this case, it means that 
 
 ## 3.5 Type Assignments (p.361)
+
+This important section is where we define well-typed. The paper actually
+defines it twice, and the second definition (Proposition 3) is easier to work
+with.
+
 ## 3.6 Substitutions (p.363)
 ## 3.7 Well-Typed Expressions Do Not Go Wrong (p.364)
 

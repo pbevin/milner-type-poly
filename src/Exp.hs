@@ -69,6 +69,7 @@ pes' p e = case e of
   Fix x e -> [(p ++ [FixP x], e)]
   Let x e e' -> [(p, e), (p ++ [LetP x], e')]
 
+-- Bottom of p361
 e1 :: Exp
 e1 = Lambda "y" $ Let "f" (Lambda "x" (Apply (Id "x") (Id "y")))
                           (Apply (Id "f") (Id "y"))
@@ -82,15 +83,42 @@ data TypedExp = IdT Type String
                 deriving (Show, Eq)
 
 
+-- Bottom of p361
+-- ab = FunType (TypeVariable "a") (TypeVariable "b")
+-- abb = FunType (TypeVariable "a") (FunType (TypeVariable "b") (TypeVariable "b"))
+-- te1 = LambdaT (TypeVariable "a") "y" $
+--         LetT abb "f" (Lambda ab (
 
 
 type Id = String
 type Error = String
+
+genericVariables :: TypedExp -> [Id]
+
+type Substitution = Map Id Type
+sub :: Substitution -> Id -> Type
+sub s a = case Map.lookup a s of
+  Just t -> t
+  Nothing -> TypeVariable a
+
+sub1 = Map.fromList [ ("a", BasicType "Int"), ("b", TypeVariable "a"), ("c", FunType (TypeVariable "d") (BasicType "Bool"))]
+
+involves :: Substitution -> Id -> Bool
+s `involves` a = (sub s a /= TypeVariable a) || any (\(b,sb) -> a `occursIn` sb) (Map.toList s)
+
+-- sub1 involves all of "a", "b", "c", "d", but not "e".
+
+occursIn :: Id -> Type -> Bool
+x `occursIn` (BasicType t) = False
+x `occursIn` (TypeVariable a) = a == x
+x `occursIn` (FunType a b) = x `occursIn` a || x `occursIn` b
+
+
+
+
 
 isWrong (W _) = True
 isWrong _ = False
 isFunc (F _) = True
 isFunc _ = False
 isBool (B0 _) = True; isBool _ = False
-
-
