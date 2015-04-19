@@ -46,7 +46,14 @@ So we will have to firm up the statement of the theorem by
 
 ## 3.2 Semantic Equations for Exp (p.358)
 
-* Defines the runtime evaluator for our language
+
+* Defines the runtime evaluator for our language. This is a standard evaluator, but the important
+  parts are where it returns `wrong`. These are the type errors:
+  * If you call something, it has to be a Function
+  * The condition of an `if-then-else` must be a Boolean.
+
+![Type errors in the evaluator](type-errors.png)
+
 * Three quick points:
   * `fix` is defined in terms of the Y combinator
   * Semantically, `let x = 3 in x+1` is the same as `(lambda (x) x+1)(3)`.
