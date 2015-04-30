@@ -1,6 +1,6 @@
 module TypedPE where
 
-import Data.List (union)
+import Data.List (union, intersect)
 import Exp
 import Type
 import TypedExp
@@ -45,10 +45,11 @@ subTypedPEs (p,e) = [(p,e)] ++ (concatMap subTypedPEs $ pes' p e)
           LetT x e e' t -> [(p, e), (p ++ [LetPT x t], e')]
 
 isStandard :: TypedPE -> Bool
-isStandard = undefined
--- isStandard :: TypedPE -> Bool
--- isStandard pe = all standard (subTypedPEs pe)
---   where standard (_,
+isStandard pe = all standard (subTypedPEs pe)
+  where
+    standard (p,e) = case e of
+      LetT x e e' t -> genericVariables (p,e) `intersect` genericVariables (p,e') == []
+      _ -> True
 
 
 genericVariables :: TypedPE -> [Id]

@@ -18,13 +18,19 @@ spec = do
           ([LambdaPT "y" a, LetPT "f" c], f_acc),
           ([LambdaPT "y" a, LetPT "f" c], y_a) ]
 
-  -- describe "isStandard" $ do
-  --   it "is true for a standard expression" $ do
-  --     let exp = LetT "x" (IdT "y" a) (IdT "x" b) b
-  --     isStandard exp `shouldBe` True
-
+  -- Generic variables and isStandard are much easier to understand after
+  -- reading Pierce 22.7
 
   describe "genericVariables" $ do
     it "works on the example" $ do
       genericVariables ([LambdaPT "y" a], lamx_xy) `shouldBe` ["b"]
       genericVariables ([LambdaPT "y" a], typed_e1) `shouldBe` ["c"]
+
+  describe "isStandard" $ do
+    it "is true for a standard expression" $ do
+      let exp = LetT "x" (IdT "y" a) (IdT "x" b) b
+      isStandard ([], exp) `shouldBe` True
+
+    it "is false when e and e' have generic vars in common in a let expression" $ do
+      let exp = LetT "x" (IdT "y" a) (IdT "x" a) b
+      isStandard ([], exp) `shouldBe` False
