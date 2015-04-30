@@ -25,15 +25,15 @@ instance Eq V where
 spec :: Spec
 spec = do
   it "evaluates simple terms" $ do
-    eval0 (Id "a") `shouldBe` (B1 1)
-    eval0 (Id "b") `shouldBe` (B3 "hi")
+    eval0 (Id "a") `shouldBe` B1 1
+    eval0 (Id "b") `shouldBe` B3 "hi"
 
   it "evaluates cond" $ do
-    eval0 (Cond (Id "c") (Id "b") (Id "e")) `shouldBe` (B3 "hi")
-    eval0 (Cond (Id "d") (Id "b") (Id "e")) `shouldBe` (B2 3.1415927)
+    eval0 (Cond (Id "c") (Id "b") (Id "e")) `shouldBe` B3 "hi"
+    eval0 (Cond (Id "d") (Id "b") (Id "e")) `shouldBe` B2 3.1415927
 
   describe "Lambda" $ do
     it "returns a wrapped Haskell function" $ do
       let F f = eval0 (Lambda "a" (Id "a"))
-      f (B1 17) `shouldBe` (B1 17)
+      f (B1 17) `shouldBe` B1 17
 

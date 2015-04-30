@@ -1,5 +1,6 @@
 module Substitution where
 
+import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Exp
@@ -7,10 +8,7 @@ import Type
 
 type Substitution = Map Id Type
 sub :: Substitution -> Id -> Type
-sub s a = case Map.lookup a s of
-  Just t -> t
-  Nothing -> TypeVariable a
-
+sub s a = fromMaybe (TypeVariable a) (Map.lookup a s)
 
 involves :: Substitution -> Id -> Bool
 s `involves` a = (sub s a /= TypeVariable a) || any (\(b,sb) -> a `occursIn` sb) (Map.toList s)

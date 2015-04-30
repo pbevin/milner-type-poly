@@ -33,7 +33,7 @@ typed_pe1 = ([LambdaPT "y" a], typed_e1)
 
 
 subTypedPEs :: TypedPE -> [TypedPE]
-subTypedPEs (p,e) = [(p,e)] ++ (concatMap subTypedPEs $ pes' p e)
+subTypedPEs (p,e) = (p,e) : concatMap subTypedPEs (pes' p e)
   where transitive (p,e) = subTypedPEs (p,e)
         pes' :: [TypedPrefix] -> TypedExp -> [TypedPE]
         pes' p e = case e of
@@ -48,13 +48,13 @@ isStandard :: TypedPE -> Bool
 isStandard pe = all standard (subTypedPEs pe)
   where
     standard (p,e) = case e of
-      LetT x e e' t -> genericVariables (p,e) `intersect` genericVariables (p,e') == []
+      LetT x e e' t -> null $ genericVariables (p,e) `intersect` genericVariables (p,e')
       _ -> True
 
 
 genericVariables :: TypedPE -> [Id]
 genericVariables (p,e) = filter generic (typeVariables $ typeof e)
-  where generic var = not $ (var `elem` funBoundVars p)
+  where generic var = var `notElem` funBoundVars p
 
 funBoundVars :: [TypedPrefix] -> [Id]
 funBoundVars [] = []

@@ -1,6 +1,7 @@
 module Eval where
 
 import Exp
+import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Function
@@ -9,11 +10,11 @@ import Data.Function
 type Env = Map Id V
 
 eval :: Exp -> Env -> V
-eval (Id x) env = maybe Bottom id $ Map.lookup x env
+eval (Id x) env = fromMaybe Bottom $ Map.lookup x env
 eval (Apply e1 e2) env =
   let v1 = eval e1 env; v2 = eval e2 env
   in if isFunc v1
-     then if isWrong v2 then v2 else (toFunc v1) v2
+     then if isWrong v2 then v2 else toFunc v1 v2
      else W "Not a function"
 eval (Cond e1 e2 e3) env =
   let v1 = eval e1 env; v2 = eval e2 env; v3 = eval e3 env

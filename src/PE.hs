@@ -6,10 +6,10 @@ data Prefix = LambdaP Id | FixP Id | LetP Id deriving (Show, Eq)
 type PE = ([Prefix], Exp)
 
 allPrefixedExpressions :: Exp -> [PE]
-allPrefixedExpressions e = pes [] e
+allPrefixedExpressions = pes []
   where
     pes :: [Prefix] -> Exp -> [PE]
-    pes p e = [(p,e)] ++ (concatMap transitive $ pes' p e)
+    pes p e = (p,e) : concatMap transitive (pes' p e)
       where transitive (p,e) = pes p e
 
     pes' p e = case e of

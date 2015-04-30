@@ -8,7 +8,7 @@ spec :: Spec
 spec = do
   describe "subTypedPEs" $
     it "generates the correct list for the example on p361" $ do
-      subTypedPEs (typed_pe1) `shouldBe`
+      subTypedPEs typed_pe1 `shouldBe`
         [ ([LambdaPT "y" a], typed_e1),
           ([LambdaPT "y" a], lamx_xy),
           ([LambdaPT "y" a, LambdaPT "x" abb], xy_b),
