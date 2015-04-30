@@ -1,9 +1,10 @@
-module EnvSpec where
+module EvalSpec where
 
 import Test.Hspec
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Exp
+import Eval
 import GenExp
 
 eval0 t = eval t $ Map.fromList [ ("a", B1 1),

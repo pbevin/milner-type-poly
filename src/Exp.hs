@@ -1,10 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
 module Exp where
-import Data.Maybe
-import Data.Map (Map)
-import Data.Function
 import Text.Show.Functions
-import qualified Data.Map as Map
+
+type Id = String
+type Error = String
 
 data Exp = Id String
          | Apply Exp Exp
@@ -23,102 +21,9 @@ data V = B0 {toBool :: Bool}
        | Bottom
          deriving Show
 
-type Env = Map Id V
-
-eval :: Exp -> Env -> V
-eval (Id x) env = maybe Bottom id $ Map.lookup x env
-eval (Apply e1 e2) env =
-  let v1 = eval e1 env; v2 = eval e2 env
-  in if isFunc v1
-     then if isWrong v2 then v2 else (toFunc v1) v2
-     else W "Not a function"
-eval (Cond e1 e2 e3) env =
-  let v1 = eval e1 env; v2 = eval e2 env; v3 = eval e3 env
-  in if isBool v1
-     then if toBool v1 then v2 else v3
-     else W "Not a bool"
-eval (Lambda x e) env = F (\v -> eval e (Map.insert x v env))
-eval (Fix x e) env = fix (\v -> eval e (Map.insert x v env))
-eval (Let x e1 e2) env =
-  let v1 = eval e1 env
-  in case v1 of
-    W _ -> v1
-    _   -> eval e2 (Map.insert x v1 env)
-
-
-data Type = BasicType Id | FunType Type Type | TypeVariable Id deriving (Show, Eq)
-showType :: Type -> String
-showType (BasicType t) = t
-showType (FunType a b) = showType a ++ " -> (" ++ showType b ++ ")"
-showType (TypeVariable a) = a
-
-
-
-data Prefix = LambdaP Id | FixP Id | LetP Id deriving Show
-type PE = ([Prefix], Exp)
-
-pes :: [Prefix] -> Exp -> [PE]
-pes p e = [(p,e)] ++ (concatMap transitive $ pes' p e)
-  where transitive (p,e) = pes p e
-
-pes' p e = case e of
-  Id x -> []
-  Apply e e' -> [(p,e), (p,e')]
-  Cond e e' e'' -> [(p,e), (p,e'), (p,e'')]
-  Lambda x e -> [(p ++ [LambdaP x], e)]
-  Fix x e -> [(p ++ [FixP x], e)]
-  Let x e e' -> [(p, e), (p ++ [LetP x], e')]
-
--- Bottom of p361
-e1 :: Exp
-e1 = Lambda "y" $ Let "f" (Lambda "x" (Apply (Id "x") (Id "y")))
-                          (Apply (Id "f") (Id "y"))
-
-data TypedExp = IdT Type String
-              | ApplyT Type TypedExp TypedExp
-              | CondT Type TypedExp TypedExp TypedExp
-              | LambdaT Type Id TypedExp
-              | FixT Type Id TypedExp
-              | LetT Type Id TypedExp TypedExp
-                deriving (Show, Eq)
-
-
--- Bottom of p361
--- ab = FunType (TypeVariable "a") (TypeVariable "b")
--- abb = FunType (TypeVariable "a") (FunType (TypeVariable "b") (TypeVariable "b"))
--- te1 = LambdaT (TypeVariable "a") "y" $
---         LetT abb "f" (Lambda ab (
-
-
-type Id = String
-type Error = String
-
-genericVariables :: TypedExp -> [Id]
-
-type Substitution = Map Id Type
-sub :: Substitution -> Id -> Type
-sub s a = case Map.lookup a s of
-  Just t -> t
-  Nothing -> TypeVariable a
-
-sub1 = Map.fromList [ ("a", BasicType "Int"), ("b", TypeVariable "a"), ("c", FunType (TypeVariable "d") (BasicType "Bool"))]
-
-involves :: Substitution -> Id -> Bool
-s `involves` a = (sub s a /= TypeVariable a) || any (\(b,sb) -> a `occursIn` sb) (Map.toList s)
-
--- sub1 involves all of "a", "b", "c", "d", but not "e".
-
-occursIn :: Id -> Type -> Bool
-x `occursIn` (BasicType t) = False
-x `occursIn` (TypeVariable a) = a == x
-x `occursIn` (FunType a b) = x `occursIn` a || x `occursIn` b
-
-
-
-
-
 isWrong (W _) = True
 isWrong _ = False
 isFunc (F _) = True
 isFunc _ = False
-isBool (B0 _) = True; isBool _ = False
+isBool (B0 _) = True
+isBool _ = False
