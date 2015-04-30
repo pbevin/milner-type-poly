@@ -8,6 +8,8 @@ import Type
 
 wellTyped (p,e) = case e of
   IdT x t -> activeFunOrLambda x t (reverse p) || activeLet x t (reverse p)
+  ApplyT e' e'' t ->
+    wellTyped (p, e') && wellTyped (p, e'') && typeof e' == FunType (typeof e'') (typeof e)
 
 activeFunOrLambda :: Id -> Type -> [TypedPrefix] -> Bool
 activeFunOrLambda x t [] = False
@@ -20,7 +22,6 @@ activeLet x t [] = False
 activeLet x t (p:ps) = case p of
   LetPT x' s -> if x == x' then t `isGenericInstanceOf` s else activeLet x t ps
   _ -> activeLet x t ps
-
 
 isGenericInstanceOf :: Type -> Type -> Bool
 isGenericInstanceOf (TypeVariable a) _ = True
