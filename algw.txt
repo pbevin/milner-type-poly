@@ -1,0 +1,36 @@
+W(p, f) = (T, f'), where
+
+  (i) If f is x, then:
+    if λx_σ, or fix x_σ is active in p then
+      T=I, f'=x_σ ;
+    if let x_σ is active in p then
+      T=I, f'=x_τ,
+    where τ = [β_i/α_i]σ, α_i are the generic variables of σ,
+    and β_i are new variables.
+
+  (ii) If f is (de), then:
+    let (R, d_ρ) = W(p, d), and (S, e_σ) = W(Rp, e);
+    let U = Unify(Sρ, σ -> β), β new;
+    then T = USR, and f' = U(((Sd)e)_β).
+
+  (iii) If f is (if d then e else e'), then:
+    let (R, d_ρ) = W(p, d) and U_0 = Unify(ρ, ι_0);
+    let (S, e_σ) = W(U_0Rp, e), and (S’, e'_{σ'}) = W(SU_0Rp, e');
+    let U = Unify(S'σ, σ’);
+    then T = US’SU_0R, and
+         f' = U((if S'SU_0d then S'e else e')_σ).
+
+  (iv) If f is (λx.d), then:
+    let (R, d_ρ)= W(p . fix x_β, d), β new;
+    let U = Unify(Rβ, ρ);
+    then T = UR, and f' = (fix x_{URβ} . Ud)_{URβ}.
+
+  (v) If f is (fix x . d), then:
+    let(R,d_ρ) = W(p .fix x_β, d), β new;
+    let U = Unify(Rβ, ρ);
+    then T = UR, and f' = (fix x_{URβ} . Ud)_{URβ}.
+
+  (vi) If f is (let x = d in e), then:
+    let (R, d_ρ) = W(p d);
+    let (S, e_σ) = W(Rp . let x_ρ, e);
+    then T = SR, and f' = (let x_Sρ = Sd in e)_σ.
