@@ -1,35 +1,22 @@
 module TypedPE where
 
-import Data.List (union, intersect)
+import Data.List (union, intersect, (\\))
 import Exp
 import Type
 import TypedExp
 
-data TypedPrefix = LambdaPT Id Type
-                 | FixPT    Id Type
-                 | LetPT    Id Type
-                 deriving (Show, Eq)
-
+data PrefixSpecies = LambdaPT | FixPT | LetPT deriving (Show, Eq)
+type TypedPrefix = (PrefixSpecies, Id, Type)
 type TypedPE = ([TypedPrefix], TypedExp)
 
--- Bottom of p361
+prefixSpecies :: TypedPrefix -> PrefixSpecies
+prefixSpecies (p,v,t) = p
 
-a = TypeVariable "a"
-b = TypeVariable "b"
-c = TypeVariable "c"
-x_ab = IdT "x" (FunType a b)
-y_a = IdT "y" a
-xy_b = ApplyT x_ab y_a b
-abb = FunType a (FunType b b)
-lamx_xy = LambdaT "x" xy_b abb
+prefixVar :: TypedPrefix -> Id
+prefixVar (p,v,t) = v
 
-acc = FunType a (FunType c c)
-f_acc = IdT "f" acc
-fy_c = ApplyT f_acc y_a c
-
-typed_e1 = LetT "f" lamx_xy fy_c c
-
-typed_pe1 = ([LambdaPT "y" a], typed_e1)
+prefixType :: TypedPrefix -> Type
+prefixType (p,v,t) = t
 
 
 subTypedPEs :: TypedPE -> [TypedPE]
@@ -40,28 +27,37 @@ subTypedPEs (p,e) = (p,e) : concatMap subTypedPEs (pes' p e)
           IdT x t -> []
           ApplyT e e' t -> [(p,e), (p,e')]
           CondT e e' e'' t -> [(p,e), (p,e'), (p,e'')]
-          LambdaT x e t -> [(p ++ [LambdaPT x t], e)]
-          FixT x e t -> [(p ++ [FixPT x t], e)]
-          LetT x e e' t -> [(p, e), (p ++ [LetPT x t], e')]
+          LambdaT x e t -> [((LambdaPT, x, t) : p, e)]
+          FixT x e t -> [((FixPT, x, t) : p, e)]
+          LetT x e e' t -> [(p, e), ((LetPT, x, t) : p, e')]
 
-isStandard :: TypedPE -> Bool
-isStandard pe = all standard (subTypedPEs pe)
-  where
-    standard (p,e) = case e of
-      LetT x e e' t -> null $ genericVariables (p,e) `intersect` genericVariables (p,e')
-      _ -> True
+genericVars :: [TypedPrefix] -> [Id]
+genericVars xs = typeVarsIn xs \\ typeVarsIn (filter lambdaBound xs)
+
+lambdaBound :: TypedPrefix -> Bool
+lambdaBound p = prefixSpecies p /= LetPT
+typeVarsIn :: [TypedPrefix] -> [Id]
+typeVarsIn = foldl union [] . map (typeVariables . prefixType)
+
+-- isStandard :: TypedPE -> Bool
+-- isStandard pe = all standard (subTypedPEs pe)
+--   where
+--     standard (p,e) = case e of
+--       LetT x e e' t -> null $ genericVariables (p,e) `intersect` genericVariables (p,e')
+--       _ -> True
 
 
-genericVariables :: TypedPE -> [Id]
-genericVariables (p,e) = filter generic (typeVariables $ typeof e)
-  where generic var = var `notElem` funBoundVars p
 
-funBoundVars :: [TypedPrefix] -> [Id]
-funBoundVars [] = []
-funBoundVars (p:ps) = case p of
-  LambdaPT _ t -> funBoundVars ps `union` typeVariables t
-  FixPT    _ t -> funBoundVars ps `union` typeVariables t
-  LetPT    _ t -> funBoundVars ps
+-- genericVariables :: TypedPE -> [Id]
+-- genericVariables (p,e) = filter generic (typeVariables $ typeof e)
+--   where generic var = var `notElem` funBoundVars p
 
-findSubPE pe e = head $ filter (matchexp e) (subTypedPEs pe)
-  where matchexp e (_,e') = e == e'
+-- funBoundVars :: [TypedPrefix] -> [Id]
+-- funBoundVars [] = []
+-- funBoundVars ((p,_,t):ps) = case p of
+--   LambdaPT -> funBoundVars ps `union` typeVariables t
+--   FixPT    -> funBoundVars ps `union` typeVariables t
+--   LetPT    -> funBoundVars ps
+
+-- findSubPE pe e = head $ filter (matchexp e) (subTypedPEs pe)
+--   where matchexp e (_,e') = e == e'

@@ -14,13 +14,13 @@ wellTyped (p,e) = case e of
 activeFunOrLambda :: Id -> Type -> [TypedPrefix] -> Bool
 activeFunOrLambda x t [] = False
 activeFunOrLambda x t (p:ps) = case p of
-  LambdaPT x' t' -> if x == x' then t == t' else activeFunOrLambda x t ps
-  FixPT    x' t' -> if x == x' then t == t' else activeFunOrLambda x t ps
+  (LambdaPT, x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
+  (FixPT,    x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
   _ -> activeFunOrLambda x t ps
 
 activeLet x t [] = False
 activeLet x t (p:ps) = case p of
-  LetPT x' s -> if x == x' then t `isGenericInstanceOf` s else activeLet x t ps
+  (LetPT, x', s) -> if x == x' then t `isGenericInstanceOf` s else activeLet x t ps
   _ -> activeLet x t ps
 
 isGenericInstanceOf :: Type -> Type -> Bool
