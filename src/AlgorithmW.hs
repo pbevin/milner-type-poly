@@ -15,13 +15,16 @@ import Subst
 
 import Debug.Trace
 
+data InferenceError = IncompatibleTypes Type Type
+                    deriving (Show, Eq)
+
 newtype VarContext a = VarContext {
-  runV :: ExceptT String (State Int) a
-} deriving (Monad, MonadError String, MonadState Int, Functor, Applicative)
+  runV :: ExceptT InferenceError (State Int) a
+} deriving (Monad, MonadError InferenceError, MonadState Int, Functor, Applicative)
 
 runTypeChecker :: VarContext a -> a
 runTypeChecker a = case runState (runExceptT (runV a)) 0 of
-  (Left err, _) -> error err
+  (Left err, _) -> error (show err)
   (Right result, _) -> result
 
 w :: ([TypedPrefix], Exp) -> (Subst, TypedExp)
@@ -31,10 +34,10 @@ w (p, f) = (t, f') where
 w' :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp)
 w' (p, f) = case f of
   Id x -> case findActive x p of
-    Just (LambdaPT, _, σ) -> return (sid, IdT x σ)
-    Just (FixPT, _, σ) -> return (sid, IdT x σ)
-    Just (LetPT, _, σ) -> do
-      τ <- newVars σ p
+    Just (LambdaPT, _, sigma) -> return (sid, IdT x sigma)
+    Just (FixPT, _, sigma) -> return (sid, IdT x sigma)
+    Just (LetPT, _, sigma) -> do
+      τ <- newVars sigma p
       return (sid, IdT x τ)
 
   Apply d e -> do
@@ -44,10 +47,9 @@ w' (p, f) = case f of
         sigma = typeof e'
 
     beta <- newVar
-    let TypeVariable t0 = beta
-    let u = Subst [("a", BasicType "Int"), (t0, TypeVariable "b")]
-    return (u <> s <> r, u <$$> ApplyT (s <$$> d') e' beta)
+    u <- unify (s <$$> rho) (FunType sigma beta)
 
+    return (u <> s <> r, u <$$> ApplyT (s <$$> d') e' beta)
 
 
 -- TypedPrefix list is backwards compared to the paper, so
@@ -78,3 +80,26 @@ newVar = do
   n <- get
   put (n+1)
   return $ TypeVariable ("t" ++ show n)
+
+
+unify :: Type -> Type -> VarContext Subst
+unify t1 t2 = case (t1, t2) of
+  (TypeVariable id, _)
+    | t1 == t2 -> return sid
+    | t1 /= t2 && id `elem` (typeVariables t2) ->
+        throwError $ IncompatibleTypes t1 t2
+    | otherwise -> return $ snew id t2
+
+  (BasicType _, BasicType _)
+    | t1 == t2 -> return sid
+    | otherwise ->
+        throwError $ IncompatibleTypes t1 t2
+
+  (FunType a b, FunType a' b') -> do
+    r <- unify a a'
+    s <- unify b b'
+    return $ r <> s
+
+  (_, TypeVariable _) -> unify t2 t1
+
+  (_, _) -> throwError $ IncompatibleTypes t1 t2

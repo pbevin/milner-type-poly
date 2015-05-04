@@ -29,9 +29,9 @@ spec = do
                    (LambdaPT, "a", int) ]
         exp = Apply (Id "f") (Id "a")
 
-    let s = Subst [("a", int), ("t0", TypeVariable "b")]
-        texp = ApplyT (IdT "f" $ FunType int b)
+    let s = Subst [("b", TypeVariable "t0"), ("a", int)]
+        texp = ApplyT (IdT "f" $ FunType int t0)
                       (IdT "a" int)
-                      (TypeVariable "b")
+                      (TypeVariable "t0")
 
     w (prefix, exp) `shouldBe` (s, texp)
