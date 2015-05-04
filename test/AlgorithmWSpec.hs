@@ -8,9 +8,11 @@ import TypedExp
 import Type
 import Subst
 
+bool = BasicType "Bool"
 int = BasicType "Int"
 a = TypeVariable "a"
 b = TypeVariable "b"
+c = TypeVariable "c"
 t0 = TypeVariable "t0"
 
 spec :: Spec
@@ -33,5 +35,19 @@ spec = do
         texp = ApplyT (IdT "f" $ FunType int t0)
                       (IdT "a" int)
                       (TypeVariable "t0")
+
+    w (prefix, exp) `shouldBe` (s, texp)
+
+  it "types a cond" $ do
+    let prefix = [ (LambdaPT, "r", a),
+                   (LambdaPT, "s", b),
+                   (LambdaPT, "t", c) ]
+        exp = Cond (Id "r") (Id "s") (Id "t")
+
+    let s = Subst [("a", bool),("b", c)]
+        texp = CondT (IdT "r" bool)
+                     (IdT "s" c)
+                     (IdT "t" c)
+                     (TypeVariable "c")
 
     w (prefix, exp) `shouldBe` (s, texp)

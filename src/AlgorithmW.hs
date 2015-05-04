@@ -41,15 +41,34 @@ w' (p, f) = case f of
       return (sid, IdT x τ)
 
   Apply d e -> do
-    (r, d') <- w'(p, d)
-    (s, e') <- w'(p, e)
-    let rho = typeof d'
-        sigma = typeof e'
+    (r, dT) <- w'(p, d)
+    (s, eT) <- w'(p, e)
+    let rho = typeof dT
+        sigma = typeof eT
 
     beta <- newVar
     u <- unify (s <$$> rho) (FunType sigma beta)
 
-    return (u <> s <> r, u <$$> ApplyT (s <$$> d') e' beta)
+    return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta)
+
+  Cond d e e' -> do
+    (r, dT) <- w'(p, d)
+    let rho = typeof dT
+
+    u0 <- unify rho (BasicType "Bool")
+    
+    (s, eT) <- w'((u0 <> r) <$$> p, e)
+    (s', eT') <- w'((s <> u0 <> r) <$$> p, e')
+    let sigma = typeof eT
+        sigma' = typeof eT'
+    
+    u <- unify (s' <$$> sigma) sigma'
+    
+    return (u <> s' <> s <> u0 <> r,
+            u <$$> CondT ((s' <> s <> u0) <$$> dT)
+                         (s' <$$> eT)
+                         eT'
+                         sigma)
 
 
 -- TypedPrefix list is backwards compared to the paper, so
