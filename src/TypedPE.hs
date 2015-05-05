@@ -27,9 +27,9 @@ subTypedPEs (p,e) = (p,e) : concatMap subTypedPEs (pes' p e)
           IdT x t -> []
           ApplyT e e' t -> [(p,e), (p,e')]
           CondT e e' e'' t -> [(p,e), (p,e'), (p,e'')]
-          LambdaT x e t -> [((LambdaPT, x, t) : p, e)]
-          FixT x e t -> [((FixPT, x, t) : p, e)]
-          LetT x e e' t -> [(p, e), ((LetPT, x, t) : p, e')]
+          LambdaT x e t -> [(pushLambda x t p, e)]
+          FixT x e t -> [(pushFix x t p, e)]
+          LetT x e e' t -> [(p, e), (pushLet x t p, e')]
 
 genericVars :: [TypedPrefix] -> [Id]
 genericVars xs = typeVarsIn xs \\ typeVarsIn (filter lambdaBound xs)
@@ -39,25 +39,10 @@ lambdaBound p = prefixSpecies p /= LetPT
 typeVarsIn :: [TypedPrefix] -> [Id]
 typeVarsIn = foldl union [] . map (typeVariables . prefixType)
 
--- isStandard :: TypedPE -> Bool
--- isStandard pe = all standard (subTypedPEs pe)
---   where
---     standard (p,e) = case e of
---       LetT x e e' t -> null $ genericVariables (p,e) `intersect` genericVariables (p,e')
---       _ -> True
+pushLambda, pushFix, pushLet :: Id -> Type -> [TypedPrefix] -> [TypedPrefix]
+pushLambda = pushTP LambdaPT
+pushFix    = pushTP FixPT
+pushLet    = pushTP LetPT
 
-
-
--- genericVariables :: TypedPE -> [Id]
--- genericVariables (p,e) = filter generic (typeVariables $ typeof e)
---   where generic var = var `notElem` funBoundVars p
-
--- funBoundVars :: [TypedPrefix] -> [Id]
--- funBoundVars [] = []
--- funBoundVars ((p,_,t):ps) = case p of
---   LambdaPT -> funBoundVars ps `union` typeVariables t
---   FixPT    -> funBoundVars ps `union` typeVariables t
---   LetPT    -> funBoundVars ps
-
--- findSubPE pe e = head $ filter (matchexp e) (subTypedPEs pe)
---   where matchexp e (_,e') = e == e'
+pushTP :: PrefixSpecies -> Id -> Type -> [TypedPrefix] -> [TypedPrefix]
+pushTP s x t p = (s,x,t):p

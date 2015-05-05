@@ -75,13 +75,13 @@ w (p, f) = case f of
 
   Lambda x d -> do
     beta <- newVar
-    (r, dT, rho) <- w ((LambdaPT, x, beta) : p, d)
+    (r, dT, rho) <- w (pushLambda x beta p, d)
 
     return (r, LambdaT x dT (FunType (r <$$> beta) rho), rho)
 
   Fix x d -> do
     beta <- newVar
-    (r, dT, rho) <- w ((FixPT, x, beta) : p, d)
+    (r, dT, rho) <- w (pushFix x beta p, d)
 
     u <- unify (r <$$> beta) rho
 
@@ -90,7 +90,7 @@ w (p, f) = case f of
 
   Let x d e -> do
     (r, dT, rho) <- w (p, d)
-    (s, eT, sigma) <- w ((LetPT, x, rho) : (r <$$> p), e)
+    (s, eT, sigma) <- w (pushLet x rho (r <$$> p), e)
 
     let t = s <> r
         f' = LetT x (s <$$> dT) eT sigma
