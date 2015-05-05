@@ -52,23 +52,23 @@ w (p, f) = case f of
     (s, eT, sigma) <- w (p, e)
 
     beta <- newVar
-    u <- unify (s <$$> rho) (FunType sigma beta)
+    u <- unify (s |> rho) (FunType sigma beta)
 
-    return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta, beta)
+    return (u <> s <> r, u |> ApplyT (s |> dT) eT beta, beta)
 
   Cond d e e' -> do
     (r, dT, rho) <- w (p, d)
 
     u0 <- unify rho (BasicType "Bool")
 
-    (s, eT, sigma) <- w ((u0 <> r) <$$> p, e)
-    (s', eT', sigma') <- w ((s <> u0 <> r) <$$> p, e')
+    (s, eT, sigma) <- w (u0 <> r |> p, e)
+    (s', eT', sigma') <- w (s <> u0 <> r |> p, e')
 
-    u <- unify (s' <$$> sigma) sigma'
+    u <- unify (s' |> sigma) sigma'
 
     return (u <> s' <> s <> u0 <> r,
-            u <$$> CondT ((s' <> s <> u0) <$$> dT)
-                         (s' <$$> eT)
+            u |> CondT (s' <> s <> u0 |> dT)
+                         (s' |> eT)
                          eT'
                          sigma,
             sigma)
@@ -77,23 +77,23 @@ w (p, f) = case f of
     beta <- newVar
     (r, dT, rho) <- w (pushLambda x beta p, d)
 
-    return (r, LambdaT x dT (FunType (r <$$> beta) rho), rho)
+    return (r, LambdaT x dT (FunType (r |> beta) rho), rho)
 
   Fix x d -> do
     beta <- newVar
     (r, dT, rho) <- w (pushFix x beta p, d)
 
-    u <- unify (r <$$> beta) rho
+    u <- unify (r |> beta) rho
 
-    let t = (u <> r) <$$> beta
-    return (u <> r, FixT x (u <$$> dT) t, t)
+    let t = (u <> r) |> beta
+    return (u <> r, FixT x (u |> dT) t, t)
 
   Let x d e -> do
     (r, dT, rho) <- w (p, d)
-    (s, eT, sigma) <- w (pushLet x rho (r <$$> p), e)
+    (s, eT, sigma) <- w (pushLet x rho (r |> p), e)
 
     let t = s <> r
-        f' = LetT x (s <$$> dT) eT sigma
+        f' = LetT x (s |> dT) eT sigma
     return (t, f', sigma)
 
 
@@ -110,7 +110,7 @@ findActive x (p:ps) = if prefixVar p == x
 newVars :: Type -> [TypedPrefix] -> VarContext Type
 newVars t p = do
   map <- mapNewVars (typeVariables t `intersect` genericVars p)
-  return $ (Subst map) <$$> t
+  return $ (Subst map) |> t
 
 mapNewVars :: [Id] -> VarContext [(Id, Type)]
 mapNewVars xs = mapM newVarFor xs

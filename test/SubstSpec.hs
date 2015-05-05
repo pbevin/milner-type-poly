@@ -16,15 +16,15 @@ instance Arbitrary VarName where
     return $ VarName name
 
 prop_sid_is_identity :: Type -> Bool
-prop_sid_is_identity t = sid <$$> t == t
+prop_sid_is_identity t = sid |> t == t
 
 prop_sid_is_left_unit :: Subst -> VarName -> Bool
 prop_sid_is_left_unit s (VarName t) =
-  (sid <> s) <$$> (TypeVariable t) == s <$$> (TypeVariable t)
+  (sid <> s) |> (TypeVariable t) == s |> (TypeVariable t)
 
 prop_sid_is_right_unit :: Subst -> VarName -> Bool
 prop_sid_is_right_unit s (VarName t) =
-  (s <> sid) <$$> (TypeVariable t) == s <$$> (TypeVariable t)
+  (s <> sid) |> (TypeVariable t) == s |> (TypeVariable t)
 
 spec :: Spec
 spec = do
@@ -47,13 +47,13 @@ spec = do
       let m1 = snew "a" $ TypeVariable "b"
 
       it "maps type variables" $ do
-        m1 <$$> TypeVariable "a" `shouldBe` TypeVariable "b"
+        m1 |> TypeVariable "a" `shouldBe` TypeVariable "b"
 
       it "does not map basic types" $ do
-        m1 <$$> BasicType "Int" `shouldBe` BasicType "Int"
+        m1 |> BasicType "Int" `shouldBe` BasicType "Int"
 
       it "maps inside function types" $ do
-        m1 <$$> FunType (TypeVariable "a") (TypeVariable "a") `shouldBe`
+        m1 |> FunType (TypeVariable "a") (TypeVariable "a") `shouldBe`
           FunType (TypeVariable "b") (TypeVariable "b")
 
 
@@ -62,7 +62,7 @@ spec = do
             <> snew "b" (BasicType "Bool")
 
       it "maps a variable" $ do
-        m1 <$$> IdT "x" (TypeVariable "a") `shouldBe`
+        m1 |> IdT "x" (TypeVariable "a") `shouldBe`
           IdT "x" (BasicType "Int")
 
       it "maps an application" $ do
@@ -70,5 +70,5 @@ spec = do
             f'= IdT "f" (FunType (BasicType "Int") (BasicType "Bool"))
             a = IdT "a" (TypeVariable "a")
             a'= IdT "a" (BasicType "Int")
-        m1 <$$> ApplyT f a (TypeVariable "b") `shouldBe`
+        m1 |> ApplyT f a (TypeVariable "b") `shouldBe`
           ApplyT f' a' (BasicType "Bool")
