@@ -32,40 +32,37 @@ runTypeChecker a = case runState (runExceptT (runV a)) 0 of
   (Right result, _) -> Right result
 
 typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
-typeCheck (p, f) = runTypeChecker $ w (p, f)
+typeCheck (p, f) = case runTypeChecker $ w (p, f) of
+  Left err -> Left err
+  Right (t, f', _) -> Right (t, f')
 
-w :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp)
+w :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp, Type)
 w (p, f) = case f of
   Id x -> case findActive x p of
-    Just (LambdaPT, _, sigma) -> return (sid, IdT x sigma)
-    Just (FixPT, _, sigma) -> return (sid, IdT x sigma)
+    Just (LambdaPT, _, sigma) -> return (sid, IdT x sigma, sigma)
+    Just (FixPT, _, sigma) -> return (sid, IdT x sigma, sigma)
     Just (LetPT, _, sigma) -> do
-      τ <- newVars sigma p
-      return (sid, IdT x τ)
+      tau <- newVars sigma p
+      return (sid, IdT x tau, tau)
     Nothing -> throwError $ UnknownVariable x
 
 
   Apply d e -> do
-    (r, dT) <- w (p, d)
-    (s, eT) <- w (p, e)
-    let rho = typeof dT
-        sigma = typeof eT
+    (r, dT, rho) <- w (p, d)
+    (s, eT, sigma) <- w (p, e)
 
     beta <- newVar
     u <- unify (s <$$> rho) (FunType sigma beta)
 
-    return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta)
+    return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta, beta)
 
   Cond d e e' -> do
-    (r, dT) <- w (p, d)
-    let rho = typeof dT
+    (r, dT, rho) <- w (p, d)
 
     u0 <- unify rho (BasicType "Bool")
 
-    (s, eT) <- w ((u0 <> r) <$$> p, e)
-    (s', eT') <- w ((s <> u0 <> r) <$$> p, e')
-    let sigma = typeof eT
-        sigma' = typeof eT'
+    (s, eT, sigma) <- w ((u0 <> r) <$$> p, e)
+    (s', eT', sigma') <- w ((s <> u0 <> r) <$$> p, e')
 
     u <- unify (s' <$$> sigma) sigma'
 
@@ -73,33 +70,31 @@ w (p, f) = case f of
             u <$$> CondT ((s' <> s <> u0) <$$> dT)
                          (s' <$$> eT)
                          eT'
-                         sigma)
+                         sigma,
+            sigma)
 
   Lambda x d -> do
     beta <- newVar
-    (r, dT) <- w ((LambdaPT, x, beta) : p, d)
-    let rho = typeof dT
+    (r, dT, rho) <- w ((LambdaPT, x, beta) : p, d)
 
-    return (r, LambdaT x dT (FunType (r <$$> beta) rho))
+    return (r, LambdaT x dT (FunType (r <$$> beta) rho), rho)
 
   Fix x d -> do
     beta <- newVar
-    (r, dT) <- w ((FixPT, x, beta) : p, d)
-    let rho = typeof dT
+    (r, dT, rho) <- w ((FixPT, x, beta) : p, d)
 
     u <- unify (r <$$> beta) rho
 
-    return (u <> r, FixT x (u <$$> dT) ((u <> r) <$$> beta))
+    let t = (u <> r) <$$> beta
+    return (u <> r, FixT x (u <$$> dT) t, t)
 
   Let x d e -> do
-    (r, dT) <- w (p, d)
-    let rho = typeof dT
-    (s, eT) <- w ((LetPT, x, rho) : (r <$$> p), e)
-    let sigma = typeof eT
+    (r, dT, rho) <- w (p, d)
+    (s, eT, sigma) <- w ((LetPT, x, rho) : (r <$$> p), e)
 
     let t = s <> r
         f' = LetT x (s <$$> dT) eT sigma
-    return (t, f')
+    return (t, f', sigma)
 
 
 -- TypedPrefix list is backwards compared to the paper, so
