@@ -20,27 +20,26 @@ spec :: Spec
 spec = do
   it "types a lambda-scoped variable access" $ do
     typeCheck ([(LambdaPT, "x", int)], Id "x") `shouldBe`
-      Right (sid, IdT "x" int)
+      Right (IdT "x" int)
 
   it "types a fix-scoped variable access" $ do
     typeCheck ([(LetPT, "x", int)], Id "x") `shouldBe`
-      Right (sid, IdT "x" int)
+      Right (IdT "x" int)
 
   it "types a let-scoped variable access" $ do
     typeCheck ([(LetPT, "x", a)], Id "x") `shouldBe`
-      Right (sid, IdT "x" t0)
+      Right (IdT "x" t0)
 
   it "types a function application" $ do
     let prefix = [ (LambdaPT, "f", FunType a b),
                    (LambdaPT, "a", int) ]
         exp = Apply (Id "f") (Id "a")
 
-    let s = Subst [("b", TypeVariable "t0"), ("a", int)]
-        texp = ApplyT (IdT "f" $ FunType int t0)
+    let texp = ApplyT (IdT "f" $ FunType int t0)
                       (IdT "a" int)
                       (TypeVariable "t0")
 
-    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right texp
 
   it "types a cond" $ do
     let prefix = [ (LambdaPT, "r", a),
@@ -48,40 +47,38 @@ spec = do
                    (LambdaPT, "t", c) ]
         exp = Cond (Id "r") (Id "s") (Id "t")
 
-    let s = Subst [("a", bool),("b", c)]
-        texp = CondT (IdT "r" bool)
+    let texp = CondT (IdT "r" bool)
                      (IdT "s" c)
                      (IdT "t" c)
                      (TypeVariable "c")
 
-    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right texp
 
   it "types a lambda" $ do
     let prefix = []
         exp = Lambda "x" (Id "x")
 
-    let s = Subst []
-        texp = LambdaT "x" (IdT "x" t0) (FunType t0 t0)
+    let texp = LambdaT "x" (IdT "x" t0) (FunType t0 t0)
 
-    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right texp
 
   it "types a fix" $ do
     let prefix = []
         exp = Fix "x" (Id "x")
 
-    let s = Subst []
+    let s = sid
         texp = FixT "x" (IdT "x" t0) t0
 
-    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right texp
 
   it "types a let" $ do
     let prefix = [(LambdaPT, "y", a)]
         exp = Let "x" (Id "y") (Id "x")
 
-    let s = Subst []
+    let s = sid
         texp = LetT "x" (IdT "y" a) (IdT "x" a) a
 
-    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right texp
 
   it "refuses to type a malformed function application" $ do
     let prefix = [(LambdaPT, "f", int), (LambdaPT, "a", int)]

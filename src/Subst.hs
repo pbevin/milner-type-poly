@@ -2,6 +2,7 @@
 
 module Subst where
 
+import Text.Show.Functions
 import Test.QuickCheck
 import Data.Monoid
 import Exp
@@ -10,21 +11,28 @@ import TypedExp
 import TypedPE
 
 
-newtype Subst = Subst [(Id, Type)] deriving (Show, Eq)
+newtype Subst = Subst (Id -> Type) deriving Show
 
 instance Monoid Subst where
   mempty = sid
-  mappend (Subst m1) (Subst m2) = Subst (m2 ++ map override m1)
-    where override (x, t) = (x, Subst m2 |> t)
+  mappend = scompose
 
 slookup :: Id -> Subst -> Type
-slookup x (Subst m) = maybe (TypeVariable x) id $ lookup x m
+slookup x (Subst f) = f x
 
 sid :: Subst
-sid = Subst []
+sid = Subst TypeVariable
 
 snew :: Id -> Type -> Subst
-snew x t = Subst [(x, t)]
+snew x t = Subst $ \a -> if x == a then t else TypeVariable a
+
+scompose :: Subst -> Subst -> Subst
+scompose (Subst f) (Subst g) = Subst (chain f g) where
+  chain :: (Id -> Type) -> (Id -> Type) -> Id -> Type
+  chain f g x = case f x of
+                  BasicType t -> BasicType t
+                  TypeVariable a -> g a
+                  FunType a b -> FunType (Subst g |> a) (Subst g |> b)
 
 class Typed a where
   (|>) :: Subst -> a -> a

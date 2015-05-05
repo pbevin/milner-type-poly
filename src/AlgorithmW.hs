@@ -31,10 +31,10 @@ runTypeChecker a = case runState (runExceptT (runV a)) 0 of
   (Left err, _) -> Left err
   (Right result, _) -> Right result
 
-typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
+typeCheck :: ([TypedPrefix], Exp) -> TypeCheck TypedExp
 typeCheck (p, f) = case runTypeChecker $ w (p, f) of
   Left err -> Left err
-  Right (t, f', _) -> Right (t, f')
+  Right (_, f', _) -> Right f'
 
 w :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp, Type)
 w (p, f) = case f of
@@ -110,15 +110,15 @@ findActive x (p:ps) = if prefixVar p == x
 newVars :: Type -> [TypedPrefix] -> VarContext Type
 newVars t p = do
   map <- mapNewVars (typeVariables t `intersect` genericVars p)
-  return $ (Subst map) |> t
+  return $ map |> t
 
-mapNewVars :: [Id] -> VarContext [(Id, Type)]
-mapNewVars xs = mapM newVarFor xs
+mapNewVars :: [Id] -> VarContext Subst
+mapNewVars xs = mapM newVarFor xs >>= return . mconcat
 
-newVarFor :: Id -> VarContext (Id, Type)
+newVarFor :: Id -> VarContext Subst
 newVarFor x = do
   v <- newVar
-  return (x, v)
+  return $ snew x v
 
 newVar :: VarContext Type
 newVar = do
