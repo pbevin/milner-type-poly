@@ -6,6 +6,7 @@ import Control.Monad.Except
 import Control.Monad.State
 import Control.Applicative (Applicative)
 import Data.Monoid
+import Data.Either
 import Data.List (intersect)
 import Exp
 import Type
@@ -15,34 +16,38 @@ import Subst
 
 import Debug.Trace
 
+type TypeCheck a = Either InferenceError a
+
 data InferenceError = IncompatibleTypes Type Type
+                    | UnknownVariable Id
                     deriving (Show, Eq)
 
 newtype VarContext a = VarContext {
   runV :: ExceptT InferenceError (State Int) a
 } deriving (Monad, MonadError InferenceError, MonadState Int, Functor, Applicative)
 
-runTypeChecker :: VarContext a -> a
+runTypeChecker :: VarContext a -> TypeCheck a
 runTypeChecker a = case runState (runExceptT (runV a)) 0 of
-  (Left err, _) -> error (show err)
-  (Right result, _) -> result
+  (Left err, _) -> Left err
+  (Right result, _) -> Right result
 
-w :: ([TypedPrefix], Exp) -> (Subst, TypedExp)
-w (p, f) = (t, f') where
-  (t, f') = runTypeChecker $ w' (p, f)
+typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
+typeCheck (p, f) = runTypeChecker $ w (p, f)
 
-w' :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp)
-w' (p, f) = case f of
+w :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp)
+w (p, f) = case f of
   Id x -> case findActive x p of
     Just (LambdaPT, _, sigma) -> return (sid, IdT x sigma)
     Just (FixPT, _, sigma) -> return (sid, IdT x sigma)
     Just (LetPT, _, sigma) -> do
       τ <- newVars sigma p
       return (sid, IdT x τ)
+    Nothing -> throwError $ UnknownVariable x
+
 
   Apply d e -> do
-    (r, dT) <- w' (p, d)
-    (s, eT) <- w' (p, e)
+    (r, dT) <- w (p, d)
+    (s, eT) <- w (p, e)
     let rho = typeof dT
         sigma = typeof eT
 
@@ -52,13 +57,13 @@ w' (p, f) = case f of
     return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta)
 
   Cond d e e' -> do
-    (r, dT) <- w' (p, d)
+    (r, dT) <- w (p, d)
     let rho = typeof dT
 
     u0 <- unify rho (BasicType "Bool")
 
-    (s, eT) <- w' ((u0 <> r) <$$> p, e)
-    (s', eT') <- w' ((s <> u0 <> r) <$$> p, e')
+    (s, eT) <- w ((u0 <> r) <$$> p, e)
+    (s', eT') <- w ((s <> u0 <> r) <$$> p, e')
     let sigma = typeof eT
         sigma' = typeof eT'
 
@@ -72,14 +77,14 @@ w' (p, f) = case f of
 
   Lambda x d -> do
     beta <- newVar
-    (r, dT) <- w' ((LambdaPT, x, beta) : p, d)
+    (r, dT) <- w ((LambdaPT, x, beta) : p, d)
     let rho = typeof dT
 
     return (r, LambdaT x dT (FunType (r <$$> beta) rho))
 
   Fix x d -> do
     beta <- newVar
-    (r, dT) <- w' ((FixPT, x, beta) : p, d)
+    (r, dT) <- w ((FixPT, x, beta) : p, d)
     let rho = typeof dT
 
     u <- unify (r <$$> beta) rho
@@ -87,9 +92,9 @@ w' (p, f) = case f of
     return (u <> r, FixT x (u <$$> dT) ((u <> r) <$$> beta))
 
   Let x d e -> do
-    (r, dT) <- w' (p, d)
+    (r, dT) <- w (p, d)
     let rho = typeof dT
-    (s, eT) <- w' ((LetPT, x, rho) : (r <$$> p), e)
+    (s, eT) <- w ((LetPT, x, rho) : (r <$$> p), e)
     let sigma = typeof eT
 
     let t = s <> r

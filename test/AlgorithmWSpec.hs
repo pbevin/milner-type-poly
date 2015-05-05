@@ -1,5 +1,6 @@
 module AlgorithmWSpec where
 
+import Control.Exception (evaluate)
 import Test.Hspec
 import AlgorithmW
 import Exp
@@ -18,13 +19,16 @@ t0 = TypeVariable "t0"
 spec :: Spec
 spec = do
   it "types a lambda-scoped variable access" $ do
-    w ([(LambdaPT, "x", int)], Id "x") `shouldBe` (sid, IdT "x" int)
+    typeCheck ([(LambdaPT, "x", int)], Id "x") `shouldBe`
+      Right (sid, IdT "x" int)
 
   it "types a fix-scoped variable access" $ do
-    w ([(LetPT, "x", int)], Id "x") `shouldBe` (sid, IdT "x" int)
+    typeCheck ([(LetPT, "x", int)], Id "x") `shouldBe`
+      Right (sid, IdT "x" int)
 
   it "types a let-scoped variable access" $ do
-    w ([(LetPT, "x", a)], Id "x") `shouldBe` (sid, IdT "x" t0)
+    typeCheck ([(LetPT, "x", a)], Id "x") `shouldBe`
+      Right (sid, IdT "x" t0)
 
   it "types a function application" $ do
     let prefix = [ (LambdaPT, "f", FunType a b),
@@ -36,7 +40,7 @@ spec = do
                       (IdT "a" int)
                       (TypeVariable "t0")
 
-    w (prefix, exp) `shouldBe` (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
   it "types a cond" $ do
     let prefix = [ (LambdaPT, "r", a),
@@ -50,8 +54,7 @@ spec = do
                      (IdT "t" c)
                      (TypeVariable "c")
 
-    w (prefix, exp) `shouldBe` (s, texp)
-
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
   it "types a lambda" $ do
     let prefix = []
@@ -60,8 +63,7 @@ spec = do
     let s = Subst []
         texp = LambdaT "x" (IdT "x" t0) (FunType t0 t0)
 
-    w (prefix, exp) `shouldBe` (s, texp)
-
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
   it "types a fix" $ do
     let prefix = []
@@ -70,7 +72,7 @@ spec = do
     let s = Subst []
         texp = FixT "x" (IdT "x" t0) t0
 
-    w (prefix, exp) `shouldBe` (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
   it "types a let" $ do
     let prefix = [(LambdaPT, "y", a)]
@@ -79,4 +81,18 @@ spec = do
     let s = Subst []
         texp = LetT "x" (IdT "y" a) (IdT "x" a) a
 
-    w (prefix, exp) `shouldBe` (s, texp)
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)
+
+  it "refuses to type a malformed function application" $ do
+    let prefix = [(LambdaPT, "f", int), (LambdaPT, "a", int)]
+        exp = Apply (Id "f") (Id "a")
+
+    typeCheck (prefix, exp) `shouldBe`
+      Left (IncompatibleTypes int (FunType int t0))
+
+  it "refuses to type an unknown variable" $ do
+    let prefix = []
+        exp = Id "x"
+
+    typeCheck ([], Id "x") `shouldBe`
+      Left (UnknownVariable "x")
