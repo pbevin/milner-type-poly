@@ -51,3 +51,32 @@ spec = do
                      (TypeVariable "c")
 
     w (prefix, exp) `shouldBe` (s, texp)
+
+
+  it "types a lambda" $ do
+    let prefix = []
+        exp = Lambda "x" (Id "x")
+
+    let s = Subst []
+        texp = LambdaT "x" (IdT "x" t0) (FunType t0 t0)
+
+    w (prefix, exp) `shouldBe` (s, texp)
+
+
+  it "types a fix" $ do
+    let prefix = []
+        exp = Fix "x" (Id "x")
+
+    let s = Subst []
+        texp = FixT "x" (IdT "x" t0) t0
+
+    w (prefix, exp) `shouldBe` (s, texp)
+
+  it "types a let" $ do
+    let prefix = [(LambdaPT, "y", a)]
+        exp = Let "x" (Id "y") (Id "x")
+
+    let s = Subst []
+        texp = LetT "x" (IdT "y" a) (IdT "x" a) a
+
+    w (prefix, exp) `shouldBe` (s, texp)

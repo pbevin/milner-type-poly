@@ -21,9 +21,8 @@ W(p, f) = (T, f'), where
          f' = U((if S'SU_0d then S'e else e')_σ).
 
   (iv) If f is (λx.d), then:
-    let (R, d_ρ)= W(p . fix x_β, d), β new;
-    let U = Unify(Rβ, ρ);
-    then T = UR, and f' = (fix x_{URβ} . Ud)_{URβ}.
+    let (R, d)= W(p . λ x_β, d), where β is new;
+    then T = R, and f' = (λ x_{Rβ} . d_ρ)_{Rβ->ρ}.
 
   (v) If f is (fix x . d), then:
     let(R,d_ρ) = W(p .fix x_β, d), β new;

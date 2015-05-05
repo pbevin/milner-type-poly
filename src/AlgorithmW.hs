@@ -41,8 +41,8 @@ w' (p, f) = case f of
       return (sid, IdT x τ)
 
   Apply d e -> do
-    (r, dT) <- w'(p, d)
-    (s, eT) <- w'(p, e)
+    (r, dT) <- w' (p, d)
+    (s, eT) <- w' (p, e)
     let rho = typeof dT
         sigma = typeof eT
 
@@ -52,23 +52,49 @@ w' (p, f) = case f of
     return (u <> s <> r, u <$$> ApplyT (s <$$> dT) eT beta)
 
   Cond d e e' -> do
-    (r, dT) <- w'(p, d)
+    (r, dT) <- w' (p, d)
     let rho = typeof dT
 
     u0 <- unify rho (BasicType "Bool")
-    
-    (s, eT) <- w'((u0 <> r) <$$> p, e)
-    (s', eT') <- w'((s <> u0 <> r) <$$> p, e')
+
+    (s, eT) <- w' ((u0 <> r) <$$> p, e)
+    (s', eT') <- w' ((s <> u0 <> r) <$$> p, e')
     let sigma = typeof eT
         sigma' = typeof eT'
-    
+
     u <- unify (s' <$$> sigma) sigma'
-    
+
     return (u <> s' <> s <> u0 <> r,
             u <$$> CondT ((s' <> s <> u0) <$$> dT)
                          (s' <$$> eT)
                          eT'
                          sigma)
+
+  Lambda x d -> do
+    beta <- newVar
+    (r, dT) <- w' ((LambdaPT, x, beta) : p, d)
+    let rho = typeof dT
+
+    return (r, LambdaT x dT (FunType (r <$$> beta) rho))
+
+  Fix x d -> do
+    beta <- newVar
+    (r, dT) <- w' ((FixPT, x, beta) : p, d)
+    let rho = typeof dT
+
+    u <- unify (r <$$> beta) rho
+
+    return (u <> r, FixT x (u <$$> dT) ((u <> r) <$$> beta))
+
+  Let x d e -> do
+    (r, dT) <- w' (p, d)
+    let rho = typeof dT
+    (s, eT) <- w' ((LetPT, x, rho) : (r <$$> p), e)
+    let sigma = typeof eT
+
+    let t = s <> r
+        f' = LetT x (s <$$> dT) eT sigma
+    return (t, f')
 
 
 -- TypedPrefix list is backwards compared to the paper, so
