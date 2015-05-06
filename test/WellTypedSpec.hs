@@ -33,7 +33,7 @@ spec = do
 
 
   describe "A function application" $ do
-    it "is true for a well-typed expression" $ do
+    it "can be well-typed" $ do
       let pe = ([lambdaPT "f" $ FunType int bool, lambdaPT "x" int],
                    ApplyT (IdT "f" $ FunType int bool) (IdT "x" int) bool)
       wellTyped pe `shouldBe` True
@@ -62,3 +62,46 @@ spec = do
       let pe = ([lambdaPT "f" $ FunType int int, lambdaPT "x" int],
                    ApplyT (IdT "f" $ FunType int int) (IdT "x" int) bool)
       wellTyped pe `shouldBe` False
+
+  describe "A cond" $ do
+    it "can be well-typed" $ do
+      let prefix = [lambdaPT "x" bool, lambdaPT "y" int, lambdaPT "z" int]
+          exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` True
+
+    it "must not have a badly typed predicate" $ do
+      let prefix = [lambdaPT "x" int, lambdaPT "y" int, lambdaPT "z" int]
+          exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must not have a badly typed then clause" $ do
+      let prefix = [lambdaPT "x" bool, lambdaPT "y" bool, lambdaPT "z" int]
+          exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must not have a badly typed else clause" $ do
+      let prefix = [lambdaPT "x" bool, lambdaPT "y" int, lambdaPT "z" bool]
+          exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have a boolean condition" $ do
+      let prefix = [lambdaPT "x" int, lambdaPT "y" int, lambdaPT "z" int]
+          exp = CondT (IdT "x" int) (IdT "y" int) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have then and else clauses of the same type" $ do
+      let prefix = [lambdaPT "x" bool, lambdaPT "y" bool, lambdaPT "z" int]
+          exp = CondT (IdT "x" bool) (IdT "y" bool) (IdT "z" int) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must expect the right type" $ do
+      let prefix = [lambdaPT "x" bool, lambdaPT "y" int, lambdaPT "z" int]
+          exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) bool
+
+      wellTyped (prefix, exp) `shouldBe` False

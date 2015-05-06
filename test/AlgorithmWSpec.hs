@@ -119,5 +119,4 @@ spec = do
                      (ApplyT (IdT "f" $ FunType int int) (IdT "x" int) int)
                      int
 
-
     typeCheck (prefix, exp) `shouldBe` Right (s, texp)
