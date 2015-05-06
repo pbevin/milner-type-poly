@@ -8,7 +8,7 @@ import Type
 import Unify
 
 wellTyped (p,e) = case e of
-  IdT x t -> activeFunOrLambda x t (reverse p) || activeLet x t (reverse p)
+  IdT x t -> activeFunOrLambda x t p || activeLet x t p
 
   ApplyT e' e'' t ->
     wellTyped (p, e')
@@ -23,8 +23,19 @@ wellTyped (p,e) = case e of
       && typeof e' == typeof e''
       && typeof e'' == t
 
+  LambdaT x t' e t ->
+    wellTyped (p, e)
+      && t == FunType t' (typeof e)
 
+  FixT x t' e t ->
+    wellTyped (p, e)
+      && t == t'
+      && t == typeof e
 
+  LetT x t' e e' t ->
+    wellTyped (p, e)
+      && wellTyped (pushLet x t' p, e')
+      && t == typeof e'
 
 
 activeFunOrLambda :: Id -> Type -> [TypedPrefix] -> Bool
@@ -32,6 +43,7 @@ activeFunOrLambda x t [] = False
 activeFunOrLambda x t (p:ps) = case p of
   (LambdaPT, x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
   (FixPT,    x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
+  (LetPT,    x',  _) -> if x == x' then False else activeFunOrLambda x t ps
   _ -> activeFunOrLambda x t ps
 
 activeLet :: Id -> Type -> [TypedPrefix] -> Bool

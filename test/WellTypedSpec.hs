@@ -11,6 +11,9 @@ int = BasicType "Int"
 bool :: Type
 bool = BasicType "Bool"
 
+a = TypeVariable "a"
+b = TypeVariable "b"
+
 lambdaPT v t = (LambdaPT, v, t)
 letPT v t = (LetPT, v, t)
 
@@ -21,8 +24,8 @@ spec = do
     it "is active in the prefix with the same type" $ do
       wellTyped ([lambdaPT "x" int], IdT "x" int) `shouldBe` True
       wellTyped ([lambdaPT "x" bool], IdT "x" int) `shouldBe` False
-      wellTyped ([lambdaPT "x" bool, lambdaPT "x" int], IdT "x" int) `shouldBe` True
-      wellTyped ([lambdaPT "x" int, lambdaPT "x" bool], IdT "x" int) `shouldBe` False
+      wellTyped ([lambdaPT "x" int, lambdaPT "x" bool], IdT "x" int) `shouldBe` True
+      wellTyped ([lambdaPT "x" bool, lambdaPT "x" int], IdT "x" int) `shouldBe` False
 
     it "is active in the prefix as a let with a generic instance of the same type" $ do
       wellTyped ([letPT "x" $ TypeVariable "a"], IdT "x" int) `shouldBe` True
@@ -106,7 +109,79 @@ spec = do
 
       wellTyped (prefix, exp) `shouldBe` False
 
---   describe "A lambda" $ do
---     it "can be well-typed" $ do
---       let prefix = []
---           exp = LambdaT "x"
+  describe "A lambda" $ do
+    it "can be well-typed" $ do
+      let prefix = [lambdaPT "y" int]
+          exp = LambdaT "x" bool (IdT "y" int) (FunType bool int)
+
+      wellTyped (prefix, exp) `shouldBe` True
+
+    it "must have a well-typed body" $ do
+      let prefix = [lambdaPT "y" bool]
+          exp = LambdaT "x" bool (IdT "y" int) (FunType bool int)
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must expect the right type" $ do
+      let prefix = [lambdaPT "y" int]
+          exp = LambdaT "x" bool (IdT "y" int) (FunType int int)
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+  describe "A fix" $ do
+    let ab = FunType a b
+
+    it "can be well-typed" $ do
+      let prefix = [lambdaPT "g" ab]
+          exp = FixT "f" ab (IdT "g" ab) ab
+
+      wellTyped (prefix, exp) `shouldBe` True
+
+    it "must have a well-typed body" $ do
+      let prefix = [lambdaPT "g" ab]
+          exp = FixT "f" ab (IdT "g" int) ab
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have the same type as its variable" $ do
+      let prefix = [lambdaPT "g" ab]
+          exp = FixT "f" ab (IdT "g" ab) int
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have the same type as its body" $ do
+      let prefix = [lambdaPT "g" int]
+          exp = FixT "f" ab (IdT "g" int) ab
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+  describe "A let" $ do
+    it "can be well typed" $ do
+      let prefix = [lambdaPT "y" int, lambdaPT "z" bool]
+          exp = LetT "x" int (IdT "y" int) (IdT "z" bool) bool
+
+      wellTyped (prefix, exp) `shouldBe` True
+
+    it "must have a well-typed declaration" $ do
+      let prefix = [lambdaPT "y" bool, lambdaPT "z" bool]
+          exp = LetT "x" int (IdT "y" int) (IdT "z" bool) bool
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have a well-typed body" $ do
+      let prefix = [lambdaPT "y" int, lambdaPT "z" int]
+          exp = LetT "x" int (IdT "y" int) (IdT "z" bool) bool
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must have a well-typed body when the new var is added" $ do
+      let prefix = [lambdaPT "y" int, lambdaPT "x" bool]
+          exp = LetT "x" int (IdT "y" int) (IdT "x" bool) bool
+
+      wellTyped (prefix, exp) `shouldBe` False
+
+    it "must expect the body's type as its own" $ do
+      let prefix = [lambdaPT "y" int, lambdaPT "x" bool]
+          exp = LetT "x" int (IdT "y" int) (IdT "x" int) bool
+
+      wellTyped (prefix, exp) `shouldBe` False
