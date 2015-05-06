@@ -11,13 +11,8 @@ int = BasicType "Int"
 bool :: Type
 bool = BasicType "Bool"
 
-ta :: Type
-ta = TypeVariable "a"
-
-aa = FunType ta ta
-aint = FunType ta int
-
 lambdaPT v t = (LambdaPT, v, t)
+letPT v t = (LetPT, v, t)
 
 spec :: Spec
 spec = do
@@ -29,8 +24,12 @@ spec = do
       wellTyped ([lambdaPT "x" bool, lambdaPT "x" int], IdT "x" int) `shouldBe` True
       wellTyped ([lambdaPT "x" int, lambdaPT "x" bool], IdT "x" int) `shouldBe` False
 
-    -- it "is active in the prefix as a let with a generic instance of the same type" $ do
-    --   wellTyped ([LambdaPT "x" ta], IdT "x" int) `shouldBe` True
+    it "is active in the prefix as a let with a generic instance of the same type" $ do
+      wellTyped ([letPT "x" $ TypeVariable "a"], IdT "x" int) `shouldBe` True
+
+    it "must not be a nongeneric instance under a let prefix" $ do
+      wellTyped ([lambdaPT "z" $ TypeVariable "a", letPT "x" $ TypeVariable "a"], IdT "x" int)
+        `shouldBe` False
 
 
   describe "A function application" $ do

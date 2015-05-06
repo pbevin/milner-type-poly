@@ -4,6 +4,7 @@ module Subst where
 
 import Test.QuickCheck
 import Data.Monoid
+import Data.List
 import Exp
 import Type
 import TypedExp
@@ -14,7 +15,7 @@ newtype Subst = Subst [(Id, Type)] deriving (Show, Eq)
 
 instance Monoid Subst where
   mempty = sid
-  mappend (Subst m1) (Subst m2) = Subst (m2 ++ map override m1)
+  mappend (Subst m1) (Subst m2) = Subst (nub $ m2 ++ map override m1)
     where override (x, t) = (x, Subst m2 |> t)
 
 slookup :: Id -> Subst -> Type
@@ -41,7 +42,7 @@ instance Typed TypedExp where
   m |> ApplyT e e' t = ApplyT (m |> e) (m |> e') (m |> t)
   m |> CondT d e e' t = CondT (m |> d) (m |> e) (m |> e') (m |> t)
   m |> LambdaT x e t = LambdaT x (m |> e) (m |> t)
-  m |> FixT x e t = LambdaT x (m |> e) (m |> t)
+  m |> FixT x e t = FixT x (m |> e) (m |> t)
   m |> LetT x d e t = LetT x (m |> d) (m |> e) (m |> t)
 
 instance Typed a => Typed [a] where

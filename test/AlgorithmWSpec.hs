@@ -8,6 +8,7 @@ import TypedPE
 import TypedExp
 import Type
 import Subst
+import InferenceError
 
 bool = BasicType "Bool"
 int = BasicType "Int"
@@ -96,3 +97,27 @@ spec = do
 
     typeCheck ([], Id "x") `shouldBe`
       Left (UnknownVariable "x")
+
+  it "refuses to redefine a type variable under a lambda" $ do
+    let prefix = [(LambdaPT, "f", FunType a a), (LambdaPT, "x", int), (LambdaPT, "y", bool)]
+        exp = (Cond (Apply (Id "f") (Id "y"))
+                    (Apply (Id "f") (Id "x"))
+                    (Apply (Id "f") (Id "x")))
+
+    typeCheck (prefix, exp) `shouldBe`
+      Left (IncompatibleTypes bool int)
+
+  it "is happy to redefine a type variable under a let" $ do
+    let prefix = [(LetPT, "f", FunType a a), (LambdaPT, "x", int), (LambdaPT, "y", bool)]
+        exp = Cond (Apply (Id "f") (Id "y"))
+                   (Apply (Id "f") (Id "x"))
+                   (Apply (Id "f") (Id "x"))
+
+    let s = Subst [("t1", bool), ("t0", bool), ("t3", int), ("t2", int), ("t5", int), ("t4", int)]
+        texp = CondT (ApplyT (IdT "f" $ FunType bool bool) (IdT "y" bool) bool)
+                     (ApplyT (IdT "f" $ FunType int int) (IdT "x" int) int)
+                     (ApplyT (IdT "f" $ FunType int int) (IdT "x" int) int)
+                     int
+
+
+    typeCheck (prefix, exp) `shouldBe` Right (s, texp)

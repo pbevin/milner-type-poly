@@ -13,28 +13,26 @@ import Type
 import TypedExp
 import TypedPE
 import Subst
+import InferenceError
+import Unify
 
 import Debug.Trace
 
-type TypeCheck a = Either InferenceError a
+typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
+typeCheck (p, f) = case runTypeChecker $ w (p, f) of
+  Left err -> Left err
+  Right (t, f', _) -> Right (t, t |> f')
 
-data InferenceError = IncompatibleTypes Type Type
-                    | UnknownVariable Id
-                    deriving (Show, Eq)
+type TypeCheck a = Either InferenceError a
 
 newtype VarContext a = VarContext {
   runV :: ExceptT InferenceError (State Int) a
 } deriving (Monad, MonadError InferenceError, MonadState Int, Functor, Applicative)
 
 runTypeChecker :: VarContext a -> TypeCheck a
-runTypeChecker a = case runState (runExceptT (runV a)) 0 of
-  (Left err, _) -> Left err
-  (Right result, _) -> Right result
-
-typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
-typeCheck (p, f) = case runTypeChecker $ w (p, f) of
+runTypeChecker a = case evalState (runExceptT (runV a)) 0 of
   Left err -> Left err
-  Right (t, f', _) -> Right (t, f')
+  Right result -> Right result
 
 w :: ([TypedPrefix], Exp) -> VarContext (Subst, TypedExp, Type)
 w (p, f) = case f of
@@ -52,19 +50,19 @@ w (p, f) = case f of
     (s, eT, sigma) <- w (p, e)
 
     beta <- newVar
-    u <- unify (s |> rho) (FunType sigma beta)
+    u <- runUnify (s |> rho) (FunType sigma beta)
 
     return (u <> s <> r, u |> ApplyT (s |> dT) eT beta, beta)
 
   Cond d e e' -> do
     (r, dT, rho) <- w (p, d)
 
-    u0 <- unify rho (BasicType "Bool")
+    u0 <- runUnify rho (BasicType "Bool")
 
     (s, eT, sigma) <- w (u0 <> r |> p, e)
     (s', eT', sigma') <- w (s <> u0 <> r |> p, e')
 
-    u <- unify (s' |> sigma) sigma'
+    u <- runUnify (s' |> sigma) sigma'
 
     return (u <> s' <> s <> u0 <> r,
             u |> CondT (s' <> s <> u0 |> dT)
@@ -83,7 +81,7 @@ w (p, f) = case f of
     beta <- newVar
     (r, dT, rho) <- w (pushFix x beta p, d)
 
-    u <- unify (r |> beta) rho
+    u <- runUnify (r |> beta) rho
 
     let t = (u <> r) |> beta
     return (u <> r, FixT x (u |> dT) t, t)
@@ -97,15 +95,6 @@ w (p, f) = case f of
     return (t, f', sigma)
 
 
--- TypedPrefix list is backwards compared to the paper, so
--- innermost scope is to the left. This is because it's simpler
--- to cons a new element onto the left of a list than to concat
--- it onto the right.
-findActive :: Id -> [TypedPrefix] -> Maybe TypedPrefix
-findActive x [] = Nothing
-findActive x (p:ps) = if prefixVar p == x
-                      then Just p
-                      else findActive x ps
 
 newVars :: Type -> [TypedPrefix] -> VarContext Type
 newVars t p = do
@@ -127,24 +116,7 @@ newVar = do
   return $ TypeVariable ("t" ++ show n)
 
 
-unify :: Type -> Type -> VarContext Subst
-unify t1 t2 = case (t1, t2) of
-  (TypeVariable id, _)
-    | t1 == t2 -> return sid
-    | t1 /= t2 && id `elem` (typeVariables t2) ->
-        throwError $ IncompatibleTypes t1 t2
-    | otherwise -> return $ snew id t2
-
-  (BasicType _, BasicType _)
-    | t1 == t2 -> return sid
-    | otherwise ->
-        throwError $ IncompatibleTypes t1 t2
-
-  (FunType a b, FunType a' b') -> do
-    r <- unify a a'
-    s <- unify b b'
-    return $ r <> s
-
-  (_, TypeVariable _) -> unify t2 t1
-
-  (_, _) -> throwError $ IncompatibleTypes t1 t2
+runUnify :: Type -> Type -> VarContext Subst
+runUnify t1 t2 = case unify t1 t2 of
+  Left err -> throwError err
+  Right subst -> return subst

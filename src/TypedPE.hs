@@ -46,3 +46,13 @@ pushLet    = pushTP LetPT
 
 pushTP :: PrefixSpecies -> Id -> Type -> [TypedPrefix] -> [TypedPrefix]
 pushTP s x t p = (s,x,t):p
+
+-- TypedPrefix list is backwards compared to the paper, so
+-- innermost scope is to the left. This is because it's simpler
+-- to cons a new element onto the left of a list than to concat
+-- it onto the right.
+findActive :: Id -> [TypedPrefix] -> Maybe TypedPrefix
+findActive x [] = Nothing
+findActive x (p:ps) = if prefixVar p == x
+                      then Just p
+                      else findActive x ps

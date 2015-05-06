@@ -5,6 +5,7 @@ import Exp
 import TypedExp
 import TypedPE
 import Type
+import Unify
 
 wellTyped (p,e) = case e of
   IdT x t -> activeFunOrLambda x t (reverse p) || activeLet x t (reverse p)
@@ -18,10 +19,11 @@ activeFunOrLambda x t (p:ps) = case p of
   (FixPT,    x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
   _ -> activeFunOrLambda x t ps
 
-activeLet x t [] = False
-activeLet x t (p:ps) = case p of
-  (LetPT, x', s) -> if x == x' then t `isGenericInstanceOf` s else activeLet x t ps
-  _ -> activeLet x t ps
+activeLet :: Id -> Type -> [TypedPrefix] -> Bool
+activeLet x t p = case findActive x p of
+  Just (LetPT, _, s) -> unifiable s t (genericVars p)
+  _ -> False
+
 
 isGenericInstanceOf :: Type -> Type -> Bool
 isGenericInstanceOf (TypeVariable a) _ = True
