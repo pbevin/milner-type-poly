@@ -16,13 +16,13 @@ x_ab = IdT "x" (FunType a b)
 y_a = IdT "y" a
 xy_b = ApplyT x_ab y_a b
 abb = FunType a (FunType b b)
-lamx_xy = LambdaT "x" xy_b abb
+lamx_xy = LambdaT "x" (FunType a b) xy_b abb
 
 acc = FunType a (FunType c c)
 f_acc = IdT "f" acc
 fy_c = ApplyT f_acc y_a c
 
-typed_e1 = LetT "f" lamx_xy fy_c c
+typed_e1 = LetT "f" c lamx_xy fy_c c
 
 typed_pe1 = ([(LambdaPT, "y", a)], typed_e1)
 
@@ -34,9 +34,9 @@ spec = do
       subTypedPEs typed_pe1 `shouldBe`
         [ ([(LambdaPT, "y", a)], typed_e1),
           ([(LambdaPT, "y", a)], lamx_xy),
-          ([(LambdaPT, "x", abb), (LambdaPT, "y", a)], xy_b),
-          ([(LambdaPT, "x", abb), (LambdaPT, "y", a)], x_ab),
-          ([(LambdaPT, "x", abb), (LambdaPT, "y", a)], y_a),
+          ([(LambdaPT, "x", FunType a b), (LambdaPT, "y", a)], xy_b),
+          ([(LambdaPT, "x", FunType a b), (LambdaPT, "y", a)], x_ab),
+          ([(LambdaPT, "x", FunType a b), (LambdaPT, "y", a)], y_a),
           ([(LetPT, "f", c), (LambdaPT, "y", a)], fy_c),
           ([(LetPT, "f", c), (LambdaPT, "y", a)], f_acc),
           ([(LetPT, "f", c), (LambdaPT, "y", a)], y_a) ]

@@ -105,3 +105,8 @@ spec = do
           exp = CondT (IdT "x" bool) (IdT "y" int) (IdT "z" int) bool
 
       wellTyped (prefix, exp) `shouldBe` False
+
+--   describe "A lambda" $ do
+--     it "can be well-typed" $ do
+--       let prefix = []
+--           exp = LambdaT "x"

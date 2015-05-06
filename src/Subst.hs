@@ -41,9 +41,9 @@ instance Typed TypedExp where
   m |> IdT x t = IdT x (m |> t)
   m |> ApplyT e e' t = ApplyT (m |> e) (m |> e') (m |> t)
   m |> CondT d e e' t = CondT (m |> d) (m |> e) (m |> e') (m |> t)
-  m |> LambdaT x e t = LambdaT x (m |> e) (m |> t)
-  m |> FixT x e t = FixT x (m |> e) (m |> t)
-  m |> LetT x d e t = LetT x (m |> d) (m |> e) (m |> t)
+  m |> LambdaT x t' e t = LambdaT x (m |> t') (m |> e) (m |> t)
+  m |> FixT x t' e t = FixT x (m |> t') (m |> e) (m |> t)
+  m |> LetT x t' d e t = LetT x (m |> t') (m |> d) (m |> e) (m |> t)
 
 instance Typed a => Typed [a] where
   m |> xs = map (m |>) xs

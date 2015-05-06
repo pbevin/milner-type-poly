@@ -64,18 +64,16 @@ w (p, f) = case f of
 
     u <- runUnify (s' |> sigma) sigma'
 
-    return (u <> s' <> s <> u0 <> r,
-            u |> CondT (s' <> s <> u0 |> dT)
-                         (s' |> eT)
-                         eT'
-                         sigma,
-            sigma)
+    let t  = u <> s' <> s <> u0 <> r
+        f' = u |> CondT (s' <> s <> u0 |> dT) (s' |> eT) eT' sigma
+
+    return (t, f', sigma)
 
   Lambda x d -> do
     beta <- newVar
     (r, dT, rho) <- w (pushLambda x beta p, d)
 
-    return (r, LambdaT x dT (FunType (r |> beta) rho), rho)
+    return (r, LambdaT x (r |> beta) dT (FunType (r |> beta) rho), rho)
 
   Fix x d -> do
     beta <- newVar
@@ -84,14 +82,14 @@ w (p, f) = case f of
     u <- runUnify (r |> beta) rho
 
     let t = (u <> r) |> beta
-    return (u <> r, FixT x (u |> dT) t, t)
+    return (u <> r, FixT x t (u |> dT) t, t)
 
   Let x d e -> do
     (r, dT, rho) <- w (p, d)
     (s, eT, sigma) <- w (pushLet x rho (r |> p), e)
 
     let t = s <> r
-        f' = LetT x (s |> dT) eT sigma
+        f' = LetT x rho (s |> dT) eT sigma
     return (t, f', sigma)
 
 

@@ -62,7 +62,7 @@ spec = do
         exp = Lambda "x" (Id "x")
 
     let s = Subst []
-        texp = LambdaT "x" (IdT "x" t0) (FunType t0 t0)
+        texp = LambdaT "x" t0 (IdT "x" t0) (FunType t0 t0)
 
     typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
@@ -71,7 +71,7 @@ spec = do
         exp = Fix "x" (Id "x")
 
     let s = Subst []
-        texp = FixT "x" (IdT "x" t0) t0
+        texp = FixT "x" t0 (IdT "x" t0) t0
 
     typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 
@@ -80,7 +80,7 @@ spec = do
         exp = Let "x" (Id "y") (Id "x")
 
     let s = Subst []
-        texp = LetT "x" (IdT "y" a) (IdT "x" a) a
+        texp = LetT "x" a (IdT "y" a) (IdT "x" a) a
 
     typeCheck (prefix, exp) `shouldBe` Right (s, texp)
 

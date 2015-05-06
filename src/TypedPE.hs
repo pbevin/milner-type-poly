@@ -27,9 +27,9 @@ subTypedPEs (p,e) = (p,e) : concatMap subTypedPEs (pes' p e)
           IdT x t -> []
           ApplyT e e' t -> [(p,e), (p,e')]
           CondT e e' e'' t -> [(p,e), (p,e'), (p,e'')]
-          LambdaT x e t -> [(pushLambda x t p, e)]
-          FixT x e t -> [(pushFix x t p, e)]
-          LetT x e e' t -> [(p, e), (pushLet x t p, e')]
+          LambdaT x t' e t -> [(pushLambda x t' p, e)]
+          FixT x t' e t -> [(pushFix x t' p, e)]
+          LetT x t' e e' t -> [(p, e), (pushLet x t' p, e')]
 
 genericVars :: [TypedPrefix] -> [Id]
 genericVars xs = typeVarsIn xs \\ typeVarsIn (filter lambdaBound xs)
