@@ -21,23 +21,24 @@ arbWT p n = oneof [ arbLambda p (n-1),
                     arbApply p (n-1),
                     arbLet p (n-1) ]
 
+arbId :: [TypedPrefix] -> Gen TypedExp
 arbId p = do
-  (_, x, t) <- elements p
+  (_, x, t) <- elements (active p)
   return $ (IdT x t)
 
 arbCond p = do
-  (_, x, _) <- elements (findByType bool p)
-  (_, y, t) <- elements p
-  (_, z, _) <- elements (findByType t p)
+  (_, x, _) <- elements (findByType bool $ active p)
+  (_, y, t) <- elements $ active p
+  (_, z, _) <- elements (findByType t $ active p)
 
   return $ CondT (IdT x bool) (IdT y t) (IdT z t) t
 
 arbApply p 0 = do
-  (_, f, FunType a b) <- elements (functions p)
+  (_, f, FunType a b) <- elements (functions $ active p)
   case findByType a p of
     [] -> return (IdT f $ FunType a b)
     xs -> do
-      (_, x, _) <- elements (findByType a p)
+      (_, x, _) <- elements (findByType a $ active p)
       return $ ApplyT (IdT f $ FunType a b) (IdT x a) b
 
 arbApply p n = do
@@ -69,10 +70,12 @@ splitRange n = do
 
 arbTypedExp :: [TypedPrefix] -> Type -> Gen TypedExp
 arbTypedExp p t = case t of
-  FunType a b ->
-    LambdaT <$> arbIdent <*> pure a <*> arbTypedExp p b <*> pure t
+  FunType a b -> do
+    x <- arbIdent
+    e <- arbTypedExp (pushLambda x a p) b
+    return $ LambdaT x a e t
 
-  _ -> case (findByType t p) of
+  _ -> case (findByType t $ active p) of
     [] -> error $ "Can't find type " ++ (show t) ++ "\n\nin: " ++ (show p)
     xs -> do
       (_, x, _) <- elements xs
@@ -88,7 +91,7 @@ arbLambda p n = do
   (j, k) <- splitRange n
   x  <- arbIdent
   t' <- arbConcreteType j
-  e  <- arbWT p k
+  e  <- arbWT (pushLambda x t' p) k
   return $ LambdaT x t' e (FunType t' (typeof e))
 
 arbConcreteType :: Int -> Gen Type
@@ -108,3 +111,10 @@ findByType t xs = filter (\p -> prefixType p == t) xs
 
 arbIdent :: Gen Id
 arbIdent = elements ["a", "b", "c", "d", "e"]
+
+active :: [TypedPrefix] -> [TypedPrefix]
+active xs = active' xs []
+  where active' [] _ = []
+        active' (p:ps) seen = if (prefixVar p) `elem` seen
+                              then active' ps seen
+                              else p : active' ps ((prefixVar p):seen)
