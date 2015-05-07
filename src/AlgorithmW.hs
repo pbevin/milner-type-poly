@@ -14,12 +14,13 @@ import TypedExp
 import TypedPE
 import Subst
 import InferenceError
+import StdPrefix
 import Unify
 
 import Debug.Trace
 
 typeCheck :: ([TypedPrefix], Exp) -> TypeCheck (Subst, TypedExp)
-typeCheck (p, f) = case runTypeChecker $ w (p, f) of
+typeCheck (p, f) = case runTypeChecker $ w (p ++ stdPrefix, f) of
   Left err -> Left err
   Right (t, f', _) -> Right (t, t |> f')
 

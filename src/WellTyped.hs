@@ -24,11 +24,11 @@ wellTyped (p,e) = case e of
       && typeof e'' == t
 
   LambdaT x t' e t ->
-    wellTyped (p, e)
+    wellTyped (pushLambda x t' p, e)
       && t == FunType t' (typeof e)
 
   FixT x t' e t ->
-    wellTyped (p, e)
+    wellTyped (pushFix x t' p, e)
       && t == t'
       && t == typeof e
 
@@ -44,7 +44,6 @@ activeFunOrLambda x t (p:ps) = case p of
   (LambdaPT, x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
   (FixPT,    x', t') -> if x == x' then t == t' else activeFunOrLambda x t ps
   (LetPT,    x',  _) -> if x == x' then False else activeFunOrLambda x t ps
-  _ -> activeFunOrLambda x t ps
 
 activeLet :: Id -> Type -> [TypedPrefix] -> Bool
 activeLet x t p = case findActive x p of

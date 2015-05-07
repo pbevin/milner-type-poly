@@ -1,15 +1,16 @@
 module WellTypedSpec where
 
 import Test.Hspec
+import Test.QuickCheck
 import TypedPE
 import TypedExp
 import WellTyped
+import GenWellTyped
+import StdPrefix
 import Type
 
 int :: Type
 int = BasicType "Int"
-bool :: Type
-bool = BasicType "Bool"
 
 a = TypeVariable "a"
 b = TypeVariable "b"
@@ -185,3 +186,12 @@ spec = do
           exp = LetT "x" int (IdT "y" int) (IdT "x" int) bool
 
       wellTyped (prefix, exp) `shouldBe` False
+
+
+  describe "properties" $ do
+    it "can be generated" $ property $ prop_wellTypedIsWellTyped
+
+
+
+prop_wellTypedIsWellTyped :: WellTyped -> Bool
+prop_wellTypedIsWellTyped e = wellTyped (stdPrefix, fromWT e)
